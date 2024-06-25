@@ -1,0 +1,8 @@
+{
+    "access-token": "[access token, needs the following permissions: read write write:reports follow admin:read:accounts admin:read:domain_blocks admin:read:reports admin:write:reports]",
+    "server": "[instance.domain]",
+    "max-known-id-file": "max_known_id",
+    "accounts-limit": 200,
+    "log-directory": "logs",
+    "logging-level": "debug"
+}
