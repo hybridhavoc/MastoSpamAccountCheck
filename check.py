@@ -36,7 +36,7 @@ def check_accounts(
     while ACCOUNTS_RETURNED == ACCOUNTS_LIMIT:
         url = f"https://{server}/api/v1/admin/accounts?remote=true&limit={ACCOUNTS_LIMIT}&active=true&since_id={max_known_id}&max_id={LAST_CHECKED_ACCOUNT_ID}"
         resp = requests.get(
-            url, headers={"Authorization": f"Bearer {access_token}"}, timeout=5
+            url, headers={"User-Agent":user_agent(),"Authorization": f"Bearer {access_token}"}, timeout=5
         )
         if resp.status_code == 200:
             ACCOUNTS_RETURNED = len(resp.json())
@@ -164,7 +164,7 @@ def statuses_check(
 
     # Get the statuses
     get_status_lookup = f"https://{server}/api/v1/accounts/{user['account_id']}/statuses?limit=40&exclude_reblogs=true"
-    get_status_resp = requests.get(get_status_lookup,headers={"Authorization": f"Bearer {access_token}"}, timeout=5)
+    get_status_resp = requests.get(get_status_lookup,headers={"User-Agent":user_agent(),"Authorization": f"Bearer {access_token}"}, timeout=5)
     if get_status_resp.status_code == 200:
         # Successfully got statuses
         statuses_json = get_status_resp.json()
@@ -242,12 +242,12 @@ def get_account_remote__mastodon(
         user
 ):
     id_lookup_url = f"https://{user['remote_server']}/api/v1/accounts/lookup?acct={user['username']}"
-    id_lookup_resp = requests.get(id_lookup_url)
+    id_lookup_resp = requests.get(id_lookup_url,headers={"User-Agent":user_agent()})
     if id_lookup_resp.status_code == 200:
         pl("debug",f"{user['account_id']} : {user['webfinger']} : Retrieved remote accountId")
         remote_account_id = id_lookup_resp.json()["id"]
         account_lookup_url = f"https://{user['remote_server']}/api/v1/accounts/{remote_account_id}"
-        account_lookup_resp = requests.get(account_lookup_url)
+        account_lookup_resp = requests.get(account_lookup_url,headers={"User-Agent":user_agent()})
         if account_lookup_resp.status_code == 200:
             pl("debug",f"{user['account_id']} : {user['webfinger']} : Retrieved account")
             remote_account = account_lookup_resp.json()
@@ -273,13 +273,13 @@ def get_account_remote__pixelfed(
     re.I
     re_pixelfed_id = re.compile('(<profile profile-id=")([0-9]*)"')
     account_page_url = f"https://{user['remote_server']}/{user['username']}"
-    account_page_resp = requests.get(account_page_url)
+    account_page_resp = requests.get(account_page_url,headers={"User-Agent":user_agent()})
     if account_page_resp.status_code == 200:
         account_page = account_page_resp.text
         m = re_pixelfed_id.search(account_page)
         remote_account_id = m.group(2)
         account_lookup_url = f"https://{user['remote_server']}/api/pixelfed/v1/accounts/{remote_account_id}"
-        account_lookup_resp = requests.get(account_lookup_url)
+        account_lookup_resp = requests.get(account_lookup_url,headers={"User-Agent":user_agent()})
         if account_lookup_resp.status_code == 200:
             pl("debug",f"{user['account_id']} : {user['webfinger']} : Retrieved account")
             remote_account = account_lookup_resp.json()
@@ -305,7 +305,7 @@ def get_account_remote__peertube(
         user
 ):
     account_lookup_url = f"https://{user['remote_server']}/api/v1/accounts/{user['webfinger']}"
-    account_lookup_resp = requests.get(account_lookup_url)
+    account_lookup_resp = requests.get(account_lookup_url,headers={"User-Agent":user_agent()})
     if account_lookup_resp.status_code == 200:
         pl("debug",f"{user['account_id']} : {user['webfinger']} : Retrieved account")
         remote_account = account_lookup_resp.json()
@@ -314,7 +314,7 @@ def get_account_remote__peertube(
         user["following_count"] = remote_account["followingCount"]
         # Have to get the video count / statuses_count from a different endpoint
         video_count_lookup_url = f"https://{user['remote_server']}/api/v1/accounts/{user['webfinger']}/videos"
-        video_count_lookup_resp = requests.get(video_count_lookup_url)
+        video_count_lookup_resp = requests.get(video_count_lookup_url,headers={"User-Agent":user_agent()})
         if video_count_lookup_resp.status_code == 200:
             remote_videos = video_count_lookup_resp.json()
             user["statuses_count"] = remote_videos["total"]
@@ -330,7 +330,7 @@ def get_account_remote__lemmy(
         user
 ):
     account_lookup_url = f"https://{user['remote_server']}/api/v3/search?type_=Users&q={user['username']}"
-    account_lookup_resp = requests.get(account_lookup_url)
+    account_lookup_resp = requests.get(account_lookup_url,headers={"User-Agent":user_agent()})
     if account_lookup_resp.status_code == 200:
         resp = account_lookup_resp.json()
         for record in resp["users"]:
@@ -366,7 +366,7 @@ def get_account_remote__misskey(
 ):
     account_lookup_data = {"limit": 1,"username": f"{user['username']}","host": f"{user['remote_server']}"}
     account_lookup_url = f"https://{user['remote_server']}/api/users/search-by-username-and-host"
-    account_lookup_resp = requests.post(account_lookup_url,json=account_lookup_data,headers={"Content-Type":"application/json"})
+    account_lookup_resp = requests.post(account_lookup_url,json=account_lookup_data,headers={"User-Agent":user_agent(),"Content-Type":"application/json"})
     if (account_lookup_resp.status_code == 200) and (len(account_lookup_resp.json()) > 0):
         pl("debug",f"{user['account_id']} : {user['webfinger']} : Retrieved account")
         remote_account = account_lookup_resp.json()
@@ -385,7 +385,7 @@ def get_account_remote__pleroma(
         user
 ):
     account_lookup_url = f"https://{user['remote_server']}/api/v1/accounts/search?q={user['username']}&resolve=true"
-    account_lookup_resp = requests.get(account_lookup_url)
+    account_lookup_resp = requests.get(account_lookup_url,headers={"User-Agent":user_agent()})
     if account_lookup_resp.status_code == 200:
         pl("debug",f"{user['account_id']} : {user['webfinger']} : Retrieved account")
         remote_account = account_lookup_resp.json()[0]
@@ -405,7 +405,7 @@ def get_server_type(
 ):
     #Trying to determine the type of server an account is on based on the site's nodeinfo
     try:
-        nodeinfo_check_resp = requests.get(f"https://{remote_server}/.well-known/nodeinfo",timeout=5)
+        nodeinfo_check_resp = requests.get(f"https://{remote_server}/.well-known/nodeinfo",headers={"User-Agent":user_agent()},timeout=5)
     except requests.exceptions.RequestException as e:
         pl("error",f"{remote_server} : Nodeinfo check failed. {e}")
         return "Unknown"
@@ -423,7 +423,7 @@ def get_server_type(
                 print(nodeinfo_links)
                 pl("error",f"{remote_server} : Unable to get nodeinfo link on second pass")
             else:
-                nodeinfo_resp = requests.get(nodeinfo_link,timeout=5)
+                nodeinfo_resp = requests.get(nodeinfo_link,headers={"User-Agent":user_agent()},timeout=5)
                 if nodeinfo_resp.status_code == 200:
                     nodeinfo = nodeinfo_resp.json()
                     software = nodeinfo["software"]["name"]
@@ -452,7 +452,7 @@ def get_server_limits(
     domain_blocks = []
     while DOMAIN_BLOCKS_RETURNED == DOMAIN_BLOCK_LIMIT:
         domain_blocks_url = f"https://{server}/api/v1/admin/domain_blocks?limit={DOMAIN_BLOCK_LIMIT}&max_id={LAST_CHECKED_DOMAIN_ID}"
-        domain_blocks_resp = requests.get(domain_blocks_url,headers={"Authorization": f"Bearer {access_token}"}, timeout=5)
+        domain_blocks_resp = requests.get(domain_blocks_url,headers={"User-Agent":user_agent(),"Authorization": f"Bearer {access_token}"}, timeout=5)
         if domain_blocks_resp.status_code == 200:
             resp = domain_blocks_resp.json()
             DOMAIN_BLOCKS_RETURNED = len(resp)
@@ -470,7 +470,7 @@ def check_account_reports(
 ):
     #Checking for unresolved reports against the account
     report_check_url = f"https://{server}/api/v1/admin/reports?target_account_id={target_account_id}"
-    report_check_resp = requests.get(report_check_url, headers={"Authorization": f"Bearer {access_token}"}, timeout=5)
+    report_check_resp = requests.get(report_check_url, headers={"User-Agent":user_agent(),"Authorization": f"Bearer {access_token}"}, timeout=5)
     if report_check_resp.status_code == 200:
         report_count = len(report_check_resp.json())
         return report_count
@@ -496,12 +496,15 @@ def submit_report(
         report_json["status_ids"] = user["bad_statuses"]
         report_json["forward"] = "true"
     report_url = f"https://{server}/api/v1/reports"
-    report_resp = requests.post(report_url, headers={"Authorization": f"Bearer {access_token}"}, json=report_json, timeout=30)
+    report_resp = requests.post(report_url, headers={"User-Agent":user_agent(),"Authorization": f"Bearer {access_token}"}, json=report_json, timeout=30)
     if report_resp.status_code == 200:
         pl("info",f"{user['account_id']} : Report filed")
     else:
         pl("error",f"{user['account_id']} : Problem submitting report. Status code: {report_resp.status_code}")
-  
+
+def user_agent():
+    return f"MastoSpamAccountCheck; +{arguments.server}"
+
 def pl(
         level,
         message
@@ -565,7 +568,7 @@ if __name__ == "__main__":
             pl("info",f"Max known ID: {MAX_KNOWN_ID}")
     else:
         pl("error",f"Max Known ID file ({arguments.max_known_id_file}) not found")
-    
+
     # Start checking accounts
     check_accounts(arguments.server, arguments.access_token, MAX_KNOWN_ID)
 
