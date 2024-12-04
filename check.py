@@ -172,7 +172,7 @@ def statuses_check(
         response["status_code"] = get_status_resp.status_code
         for status in statuses_json:
             for c in checks:
-                if re.search(c, status["content"]):
+                if re.search(c, status["content"], flags=re.DOTALL|re.IGNORECASE):
                     bad_status_ids.append(status["id"])
                     bad_statuses.append(status)
         pl("debug", f"{server} : {len(bad_status_ids)} statuses found to match bad regexes.")
